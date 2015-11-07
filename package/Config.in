@@ -1311,6 +1311,7 @@ endif
 	source "package/openswan/Config.in"
 	source "package/openvpn/Config.in"
 	source "package/p910nd/Config.in"
+	source "package/parprouted/Config.in"
 	source "package/phidgetwebservice/Config.in"
 	source "package/portmap/Config.in"
 	source "package/pppd/Config.in"
