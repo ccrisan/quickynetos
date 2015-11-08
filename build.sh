@@ -41,11 +41,11 @@ if [ "$target" == "mkimage" ]; then
     $boarddir/mkimage.sh
 elif [ "$target" == "mkrelease" ]; then
     $boarddir/mkimage.sh
-    cp $outputdir/images/motioneyeos-$board.img $basedir
+    cp $outputdir/images/netos-$board.img $basedir
     date=$(date +%Y%m%d)
-    mv $basedir/motioneyeos-$board.img  $basedir/motioneyeos-$board-$date.img
-    rm -f $basedir/motioneyeos-$board-$date.img.gz
-    gzip $basedir/motioneyeos-$board-$date.img
+    mv $basedir/netos-$board.img  $basedir/netos-$board-$date.img
+    rm -f $basedir/netos-$board-$date.img.gz
+    gzip $basedir/netos-$board-$date.img
 elif [ -n "$target" ]; then
     make O=$outputdir $target
 else

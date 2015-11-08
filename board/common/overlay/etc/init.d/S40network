@@ -1,6 +1,7 @@
 #!/bin/sh
 
 mkdir -p /var/lib/dhcp
+netif_conf="/data/etc/netif.conf"
 dh_conf="/var/cache/dhclient.conf"
 sys_static_conf="/etc/static_ip.conf"
 static_conf="/data/etc/static_ip.conf"
@@ -15,9 +16,9 @@ link_nego_timeout=10
 eth=eth0
 wlan=wlan0
 
-if [ -f $watch_conf ]; then
-    source $watch_conf
-fi
+test -r $netif_conf && source $netif_conf
+
+test -r $watch_conf && source $watch_conf
 
 if [ -f $sys_static_conf ] && ! [ -f $static_conf ]; then
     mkdir -p $(dirname $static_conf)
@@ -68,6 +69,8 @@ start_lo() {
 }
 
 start_wlan() {
+    test -n "$wlan" || return
+
     if ! ifconfig $wlan >/dev/null 2>&1; then
         echo "$wlan: no device"
         return
@@ -93,6 +96,8 @@ start_wlan() {
 }
 
 start_eth() {
+    test -n "$eth" || return
+
     # wait up to 3 seconds for driver
     count=0
     while ! ifconfig $eth >/dev/null 2>&1; do

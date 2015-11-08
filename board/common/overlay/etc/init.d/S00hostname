@@ -6,7 +6,7 @@ start() {
     sn=$(cat /proc/cpuinfo | grep Serial | tr -d ' ' | cut -d ':' -f 2)
     sn=${sn: -8}
     echo $sn > /var/cache/serial_number
-    hostname="meye-$sn"
+    hostname="netos-$sn"
     /bin/hostname $hostname
     echo "127.0.0.1 localhost $hostname" > /etc/hosts
 

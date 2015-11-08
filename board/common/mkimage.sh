@@ -163,8 +163,8 @@ msg "destroying root loop device"
 losetup -d $loop_dev
 sync
 
-mv $DISK_IMG $(dirname $DISK_IMG)/motioneyeos-$BOARD.img
-DISK_IMG=$(dirname $DISK_IMG)/motioneyeos-$BOARD.img
+mv $DISK_IMG $(dirname $DISK_IMG)/netos-$BOARD.img
+DISK_IMG=$(dirname $DISK_IMG)/netos-$BOARD.img
 
 msg "$(realpath "$DISK_IMG") is ready"
 
