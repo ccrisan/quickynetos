@@ -4,8 +4,7 @@
 #
 #############################################################
 
-MOTIONEYEOS_VERSION = 20151103
-MOTIONEYE_VERSION = 99ca42bb03448b6af15c1354b008278b5e316427
+MOTIONEYE_VERSION = 022221553bd114c579af4ec91820ce659ea35f74
 MOTIONEYE_SITE = $(call github,ccrisan,motioneye,$(MOTIONEYE_VERSION))
 MOTIONEYE_SOURCE = $(MOTIONEYE_VERSION).tar.gz
 MOTIONEYE_LICENSE = GPLv3
@@ -17,6 +16,7 @@ DST_DIR = $(TARGET_DIR)/usr/lib/python2.7/site-packages/motioneye
 SHARE_DIR = $(TARGET_DIR)/usr/share/motioneye
 BOARD = $(shell basename $(BASE_DIR))
 BOARD_DIR = $(BASE_DIR)/../../board/$(BOARD)
+COMMON_DIR = $(BASE_DIR)/../../board/common
 
 
 define MOTIONEYE_INSTALL_TARGET_CMDS
@@ -43,13 +43,14 @@ define MOTIONEYE_INSTALL_TARGET_CMDS
         echo "        'motioneye': ('/var/log/motioneye.log', 'motioneye.log')," >> /tmp/handlers.py.new; \
         echo "        'messages': ('/var/log/messages', 'messages.log')," >> /tmp/handlers.py.new; \
         echo "        'boot': ('/var/log/boot.log', 'boot.log')," >> /tmp/handlers.py.new; \
-        echo "        'dmesg': ('dmesg', 'dmesg.log')," >> /tmp/handlers.py.new; \
+        echo "        'dmesg': ('dmesg -T', 'dmesg.log')," >> /tmp/handlers.py.new; \
         tail -n +$$(($$lineno + 2)) $(DST_DIR)/handlers.py >> /tmp/handlers.py.new; \
         mv /tmp/handlers.py.new $(DST_DIR)/handlers.py; \
     fi
 
     # version & update
-    sed -r -i "s%VERSION = .*%VERSION = '$(MOTIONEYEOS_VERSION)'%" $(DST_DIR)/__init__.py
+    source $(COMMON_DIR)/overlay/etc/version; \
+    sed -r -i "s%VERSION = .*%VERSION = '$$os_version'%" $(DST_DIR)/__init__.py
     sed -r -i "s%enable_update=False%enable_update=True%" $(DST_DIR)/handlers.py
     
     # (re)compile all python modules

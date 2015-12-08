@@ -22,6 +22,7 @@ from config import additional_config
 
 
 MOTIONEYE_CONF = '/data/etc/motioneye.conf'
+OS_CONF = '/data/etc/os.conf'
 DATE_CONF = '/data/etc/date.conf'
 
 
@@ -40,12 +41,7 @@ def _get_date_settings():
                 if not line:
                     continue
 
-                comment = False
                 if line.startswith('#'):
-                    line = line.strip('#')
-                    comment = True
-                
-                if comment:
                     continue
 
                 try:
@@ -95,6 +91,79 @@ def _set_date_settings(s):
         f.write('date_interval=%s\n' % s['dateInterval'])
 
 
+def _get_os_settings():
+    prereleases = False
+
+    if os.path.exists(OS_CONF):
+        logging.debug('reading OS settings from %s' % OS_CONF)
+
+        with open(OS_CONF) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                if line.startswith('#'):
+                    continue
+
+                try:
+                    name, value = line.split('=')
+                    value = value.strip('"').strip("'")
+
+                except:
+                    continue
+
+                if name == 'os_prereleases':
+                    prereleases = value == 'true'
+
+    s = {
+        'prereleases': prereleases
+    }
+    
+    logging.debug('OS settings: prereleases=%(prereleases)s' % s)
+    
+    return s
+
+
+def _set_os_settings(s):
+    s = dict(s)
+
+    s.setdefault('prereleases', False)
+
+    logging.debug('writing OS settings to %s: ' % OS_CONF +
+            'prereleases=%(prereleases)s' % s)
+
+    lines = []
+    if os.path.exists(OS_CONF):
+        with open(OS_CONF) as f:
+            lines = f.readlines()
+
+        for i, line in enumerate(lines):
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                name, _ = line.split('=', 2)
+    
+            except:
+                continue
+            
+            if name == 'os_prereleases':
+                lines[i] = 'os_prereleases="%s"' % str(s.pop('prereleases')).lower()
+    
+    if 'prereleases' in s:
+        lines.append('os_prereleases="%s"' % str(s.pop('prereleases')).lower())
+
+    with open(OS_CONF, 'w') as f:
+        for line in lines:
+            if not line.strip():
+                continue
+            if not line.endswith('\n'):
+                line += '\n'
+            f.write(line)
+
+
 def _get_motioneye_settings():
     port = 80
     motion_binary = '/usr/bin/motion'
@@ -130,17 +199,14 @@ def _get_motioneye_settings():
                 elif name == 'mjpg-client-idle-timeout':
                     motion_keep_alive = value == '0'
 
-    prereleases =  os.path.exists('/data/etc/prereleases')
-
     s = {
         'port': port,
         'motionBinary': motion_binary,
         'motionKeepAlive': motion_keep_alive,
-        'debug': debug,
-        'prereleases': prereleases
+        'debug': debug
     }
 
-    logging.debug('motioneye settings: port=%(port)s, motion_binary=%(motionBinary)s, motion_keep_alive=%(motionKeepAlive)s, debug=%(debug)s, prereleases=%(prereleases)s' % s)
+    logging.debug('motioneye settings: port=%(port)s, motion_binary=%(motionBinary)s, motion_keep_alive=%(motionKeepAlive)s, debug=%(debug)s' % s)
 
     return s
 
@@ -149,12 +215,11 @@ def _set_motioneye_settings(s):
     s = dict(s)
     s.setdefault('port', 80)
     s.setdefault('motionBinary', '/usr/bin/motion')
-    s.setdefault('debug', False)
-    s.setdefault('prereleases', False)
+    debug = s.setdefault('debug', False) # value needed later
     s.setdefault('motion_keep_alive', False)
     
     logging.debug('writing motioneye settings to %s: ' % MOTIONEYE_CONF +
-            'port=%(port)s, motion_binary=%(motionBinary)s, debug=%(debug)s, prereleases=%(prereleases)s, motion_keep_alive=%(motionKeepAlive)s' % s)
+            'port=%(port)s, motion_binary=%(motionBinary)s, debug=%(debug)s, motion_keep_alive=%(motionKeepAlive)s' % s)
 
     lines = []
     if os.path.exists(MOTIONEYE_CONF):
@@ -198,17 +263,6 @@ def _set_motioneye_settings(s):
     if 'motionKeepAlive' in s:
         lines.append('mjpg-client-idle-timeout %s' % [10, 0][s.pop('motionKeepAlive')])
 
-    if s['prereleases']:
-        with open('/data/etc/prereleases', 'w'):
-            pass
-            
-    else:
-        try:
-            os.remove('/data/etc/prereleases')
-        
-        except:
-            pass
-
     with open(MOTIONEYE_CONF, 'w') as f:
         for line in lines:
             if not line.strip():
@@ -216,6 +270,16 @@ def _set_motioneye_settings(s):
             if not line.endswith('\n'):
                 line += '\n'
             f.write(line)
+
+    # also update debug in os.conf
+    if debug:
+        cmd = "sed -i -r 's/os_debug=\"?false\"?/os_debug=\"true\"/'  %s" % OS_CONF
+        
+    else:
+        cmd = "sed -i -r 's/os_debug=\"?true\"?/os_debug=\"false\"/'  %s" % OS_CONF
+
+    if os.system(cmd):
+        logging.error('failed to set debug flag in os.conf')
 
 
 def _get_motion_log():
@@ -402,8 +466,8 @@ def prereleases():
         'type': 'bool',
         'section': 'expertSettings',
         'advanced': True,
-        'get': _get_motioneye_settings,
-        'set': _set_motioneye_settings,
+        'get': _get_os_settings,
+        'set': _set_os_settings,
         'get_set_dict': True
     }
 
