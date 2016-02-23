@@ -17,14 +17,42 @@
 
 import logging
 import os.path
+import subprocess
 
 from config import additional_config
 
 
 MOTIONEYE_CONF = '/data/etc/motioneye.conf'
 OS_CONF = '/data/etc/os.conf'
+HOSTNAME_CONF = '/data/etc/hostname'
 DATE_CONF = '/data/etc/date.conf'
 
+
+def _get_hostname():
+    try:
+        with open(HOSTNAME_CONF) as f:
+            hostname = f.read().strip()
+            logging.debug('hostname %s read from %s' % (hostname, HOSTNAME_CONF))
+            return hostname
+
+    except:
+        return ''
+
+
+def _set_hostname(hostname):
+    if hostname:
+        with open(HOSTNAME_CONF, 'w') as f:
+            f.write(hostname)
+        
+        logging.debug('hostname %s written to %s' % (hostname, HOSTNAME_CONF))
+
+    else:
+        try:
+            os.remove(HOSTNAME_CONF)
+            logging.debug('hostname file %s removed' % HOSTNAME_CONF)
+        
+        except:
+            pass
 
 def _get_date_settings():
     date_method = 'http'
@@ -166,6 +194,7 @@ def _set_os_settings(s):
 
 def _get_motioneye_settings():
     port = 80
+    base_path = ''
     motion_binary = '/usr/bin/motion'
     debug = False
     motion_keep_alive = False
@@ -185,28 +214,33 @@ def _get_motioneye_settings():
                 except:
                     continue
                     
-                name = name.replace('_', '-')
+                name = name.replace('-', '_')
 
                 if name == 'port':
                     port = int(value)
-                
-                elif name == 'motion-binary':
+
+                elif name == 'base_path':
+                    base_path = value.strip()
+
+                elif name == 'motion_binary':
                     motion_binary = value
                     
-                elif name == 'log-level':
+                elif name == 'log_level':
                     debug = value == 'debug'
 
-                elif name == 'mjpg-client-idle-timeout':
+                elif name == 'mjpg_client_idle_timeout':
                     motion_keep_alive = value == '0'
 
     s = {
         'port': port,
+        'basePath': base_path,
         'motionBinary': motion_binary,
         'motionKeepAlive': motion_keep_alive,
         'debug': debug
     }
 
-    logging.debug('motioneye settings: port=%(port)s, motion_binary=%(motionBinary)s, motion_keep_alive=%(motionKeepAlive)s, debug=%(debug)s' % s)
+    logging.debug(('motioneye settings: port=%(port)s, base_path=%(basePath)s, motion_binary=%(motionBinary)s, ' +
+            'motion_keep_alive=%(motionKeepAlive)s, debug=%(debug)s') % s)
 
     return s
 
@@ -214,12 +248,14 @@ def _get_motioneye_settings():
 def _set_motioneye_settings(s):
     s = dict(s)
     s.setdefault('port', 80)
+    s.setdefault('basePath', '')
     s.setdefault('motionBinary', '/usr/bin/motion')
     debug = s.setdefault('debug', False) # value needed later
     s.setdefault('motion_keep_alive', False)
     
     logging.debug('writing motioneye settings to %s: ' % MOTIONEYE_CONF +
-            'port=%(port)s, motion_binary=%(motionBinary)s, debug=%(debug)s, motion_keep_alive=%(motionKeepAlive)s' % s)
+            ('port=%(port)s, base_path=%(basePath)s, motion_binary=%(motionBinary)s, ' +
+            'motion_keep_alive=%(motionKeepAlive)s, debug=%(debug)s') % s)
 
     lines = []
     if os.path.exists(MOTIONEYE_CONF):
@@ -237,31 +273,44 @@ def _set_motioneye_settings(s):
             except:
                 continue
             
-            name = name.replace('_', '-')
+            name = name.replace('-', '_')
     
             if name == 'port':
                 lines[i] = 'port %s' % s.pop('port')
     
-            elif name == 'motion-binary':
-                lines[i] = 'motion-binary %s' % s.pop('motionBinary')
-    
-            elif name == 'log-level':
-                lines[i] = 'log-level %s' % ['info', 'debug'][s.pop('debug')]
+            elif name == 'base_path':
+                base_path = s.pop('basePath')
+                if base_path:
+                    lines[i] = 'base_path %s' % base_path
                 
-            elif name == 'mjpg-client-idle-timeout':
-                lines[i] = 'mjpg-client-idle-timeout %s' % [10, 0][s.pop('motionKeepAlive')]
+                else:
+                    lines[i] = None
+
+            elif name == 'motion_binary':
+                lines[i] = 'motion_binary %s' % s.pop('motionBinary')
+    
+            elif name == 'log_level':
+                lines[i] = 'log_level %s' % ['info', 'debug'][s.pop('debug')]
+                
+            elif name == 'mjpg_client_idle_timeout':
+                lines[i] = 'mjpg_client_idle_timeout %s' % [10, 0][s.pop('motionKeepAlive')]
+    
+    lines = [l for l in lines if l is not None]
 
     if 'port' in s:
         lines.append('port %s' % s.pop('port'))
 
+    if s.get('basePath'):
+        lines.append('base_path %s' % s.pop('basePath'))
+
     if 'motionBinary' in s:
-        lines.append('motion-binary %s' % s.pop('motionBinary'))
+        lines.append('motion_binary %s' % s.pop('motionBinary'))
 
     if 'debug' in s:
-        lines.append('log-level %s' % ['info', 'debug'][s.pop('debug')])
+        lines.append('log_level %s' % ['info', 'debug'][s.pop('debug')])
         
     if 'motionKeepAlive' in s:
-        lines.append('mjpg-client-idle-timeout %s' % [10, 0][s.pop('motionKeepAlive')])
+        lines.append('mjpg_client_idle_timeout %s' % [10, 0][s.pop('motionKeepAlive')])
 
     with open(MOTIONEYE_CONF, 'w') as f:
         for line in lines:
@@ -300,6 +349,22 @@ def _get_boot_log():
 
 def _get_dmesg_log():
     return '<a href="javascript:downloadFile(\'log/dmesg/\');">dmesg.log</a>'
+
+
+@additional_config
+def hostname():
+    return {
+        'label': 'Hostname',
+        'description': 'sets a custom hostname for the device (leave blank for default)',
+        'type': 'str',
+        'section': 'general',
+        'advanced': True,
+        'reboot': True,
+        'required': False,
+        'validate': '^[a-z0-9\-_]{0,15}$',
+        'get': _get_hostname,
+        'set': _set_hostname
+    }
 
 
 @additional_config
@@ -413,6 +478,21 @@ def port():
 
 
 @additional_config
+def basePath():
+    return {
+        'label': 'Base Path',
+        'description': 'sets a base path of all the URIs used by motionEye (useful when running behind a reverse proxy exposing the motionEye UI at /cams, for example)',
+        'type': 'str',
+        'section': 'expertSettings',
+        'advanced': True,
+        'reboot': True,
+        'get': _get_motioneye_settings,
+        'set': _set_motioneye_settings,
+        'get_set_dict': True
+    }
+
+
+@additional_config
 def motionBinary():
     return {
         'label': 'Motion Binary',
@@ -466,6 +546,7 @@ def prereleases():
         'type': 'bool',
         'section': 'expertSettings',
         'advanced': True,
+        'reboot': True,
         'get': _get_os_settings,
         'set': _set_os_settings,
         'get_set_dict': True
