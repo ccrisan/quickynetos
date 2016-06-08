@@ -5,7 +5,7 @@ function usage() {
     echo "Usage: $0 [options...]" 1>&2
     echo ""
     echo "Available options:"
-    echo "    <-i image_file> - indicates the path to the image file (e.g. -i /home/user/Download/netos.img.gz)"
+    echo "    <-i image_file> - indicates the path to the image file (e.g. -i /home/user/Download/quickynetos.img.gz)"
     echo "    <-d sdcard_dev> - indicates the path to the sdcard block device (e.g. -d /dev/mmcblk0)"
     echo "    [-n ssid:psk] - sets the wireless network name and key (e.g. -n mynet:mykey1234)"
     echo "    [-s ip/cidr:gw:dns] - sets a static IP configuration instead of DHCP (e.g. -s 192.168.1.101/24:192.168.1.1:8.8.8.8)"
