@@ -6,7 +6,7 @@
 
 PARPROUTED_VERSION = 0.7
 PARPROUTED_SOURCE = parprouted-$(PARPROUTED_VERSION).tar.gz
-PARPROUTED_SITE = http://www.hazard.maks.net/parprouted/
+PARPROUTED_SITE = http://www.hazard.maks.net/parprouted
 
 define PARPROUTED_BUILD_CMDS
 	$(MAKE) -C $(@D) \
