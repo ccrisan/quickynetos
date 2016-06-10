@@ -10,6 +10,7 @@ function usage() {
     echo "    [-a ssid:psk:channel] - configures the wireless access point (e.g. -a mynet:mykey1234:6)"
     echo "    [-m modem:apn:user:pwd:pin] - configures the mobile network modem (e.g. -m ttyUSB0:internet)"
     echo "    [-n ssid:psk] - sets the wireless network name and key (e.g. -n mynet:mykey1234)"
+    echo "    [-r ip_from-ip_to:iface] - configures the DHCP server (e.g. -r 192.168.43.50-192.168.43.100:wlan0)"
     echo "    [-s ip/cidr:gw:dns] - sets a static IP configuration instead of DHCP (e.g. -s 192.168.1.101/24:192.168.1.1:8.8.8.8)"
     exit 1
 }
@@ -24,7 +25,7 @@ function msg() {
     echo ":: $1"
 }
 
-while getopts "a:d:f:h:i:lm:n:o:p:s:w" o; do
+while getopts "a:d:f:h:i:lm:n:o:p:r:s:w" o; do
     case "$o" in
         a)
             IFS=":" NETWORK=($OPTARG)
@@ -50,6 +51,11 @@ while getopts "a:d:f:h:i:lm:n:o:p:s:w" o; do
             IFS=":" NETWORK=($OPTARG)
             SSID=${NETWORK[0]}
             PSK=${NETWORK[1]}
+            ;;
+        r)
+            IFS=":" SETTINGS=($OPTARG)
+            DM_IP=${SETTINGS[0]}
+            DM_IFACE=${SETTINGS[1]}
             ;;
         s)
             IFS=":" S_IP=($OPTARG)
@@ -171,6 +177,16 @@ if [ -n "$IP" ] && [ -n "$GW" ] && [ -n "$DNS" ]; then
     echo "static_ip=\"$IP\"" > $conf
     echo "static_gw=\"$GW\"" >> $conf
     echo "static_dns=\"$DNS\"" >> $conf
+fi
+
+# dhcp server
+if [ -n "$DM_IP" ]; then
+    msg "creating DHCP server configuration"
+    conf=$BOOT/dnsmasq.conf
+    DM_IP=$(cat $DM_IP | tr '-' ',')
+    echo "dhcp-range=$DM_IP,24h" > $conf
+    echo "interface=$DM_IFACE" >> $conf
+    echo "dhcp-leasefile=/data/dnsmasq.leases" >> $conf
 fi
 
 msg "unmounting sdcard"

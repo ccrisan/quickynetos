@@ -54,6 +54,7 @@ start() {
         fi
     done
 
+    iface=$(cat $conf | grep interface | cut -d '=' -f 2)
     module=$(basename $(readlink /sys/class/net/$iface/device/driver/module 2>/dev/null) 2>/dev/null)
 
     iwconfig $iface power off &> /dev/null
