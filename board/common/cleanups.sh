@@ -168,12 +168,16 @@ rm -rf $TARGET/usr/lib/python2.7/ensurepip/
 rm -f $TARGET/etc/init.d/S01logging
 rm -f $TARGET/etc/init.d/S10udev
 rm -f $TARGET/etc/init.d/S15watchdog
+rm -f $TARGET/etc/init.d/S20urandom
+rm -f $TARGET/etc/init.d/S30dbus
 rm -f $TARGET/etc/init.d/S49ntp
 rm -f $TARGET/etc/init.d/S50sshd
+rm -f $TARGET/etc/init.d/S60openvpn
 rm -f $TARGET/etc/init.d/S50proftpd
-rm -f $TARGET/etc/init.d/S20urandom
 rm -f $TARGET/etc/init.d/S80dhcp-relay
 rm -f $TARGET/etc/init.d/S80dhcp-server
+rm -f $TARGET/etc/init.d/S80dnsmasq
+rm -f $TARGET/etc/init.d/S80tftpd-hpa
 rm -f $TARGET/etc/init.d/S91smb
 
 # other unwanted dirs
