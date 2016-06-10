@@ -36,6 +36,7 @@ watch() {
         if ! running; then
             logger -t wifiap -s "dead, rebooting"
             reboot
+            break
         fi
     done
 }
