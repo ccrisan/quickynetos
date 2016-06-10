@@ -7,6 +7,7 @@ function usage() {
     echo "Available options:"
     echo "    <-i image_file> - indicates the path to the image file (e.g. -i /home/user/Download/file.img.gz)"
     echo "    <-d sdcard_dev> - indicates the path to the sdcard block device (e.g. -d /dev/mmcblk0)"
+    echo "    [-a ssid:psk:channel] - configures the wireless access point (e.g. -a mynet:mykey1234:6)"
     echo "    [-m modem:apn:user:pwd:pin] - configures the mobile network modem (e.g. -m ttyUSB0:internet)"
     echo "    [-n ssid:psk] - sets the wireless network name and key (e.g. -n mynet:mykey1234)"
     echo "    [-s ip/cidr:gw:dns] - sets a static IP configuration instead of DHCP (e.g. -s 192.168.1.101/24:192.168.1.1:8.8.8.8)"
@@ -25,6 +26,12 @@ function msg() {
 
 while getopts "a:d:f:h:i:lm:n:o:p:s:w" o; do
     case "$o" in
+        a)
+            IFS=":" NETWORK=($OPTARG)
+            ASSID=${NETWORK[0]}
+            APSK=${NETWORK[1]}
+            ACHAN=${NETWORK[2]}
+            ;;
         d)
             SDCARD_DEV=$OPTARG
             ;;
@@ -122,6 +129,20 @@ if [ -n "$SSID" ]; then
         echo "    psk=\"$PSK\"" >> $conf
     fi
     echo -e "}\n" >> $conf
+fi
+
+# access point
+if [ -n "$ASSID" ]; then
+    msg "creating wireless access point configuration"
+    conf=$BOOT/hostapd.conf
+    echo "ssid=$ASSID" > $conf
+    echo "wpa_passphrase=$APSK" >> $conf
+    echo "interface=wlan0" >> $conf
+    echo "channel=$ACHAN" >> $conf
+    echo "driver=nl80211" >> $conf
+    echo "hw_mode=g" >> $conf
+    echo "ieee80211n=1" >> $conf
+    echo "ieee80211ac=1" >> $conf
 fi
 
 # modem
